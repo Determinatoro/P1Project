@@ -28,15 +28,15 @@ int split_nmea_packet(char **values, char *packet) {
 }
 
 void parse_nmea_time(TIME *time, const char *str) {
-    time->hour = string_to_int(&str[0], 2);
-    time->min = string_to_int(&str[2], 2);
-    time->sec = string_to_int(&str[4], 2);
+    time->hour = string_to_int_l(&str[0], 2);
+    time->min = string_to_int_l(&str[2], 2);
+    time->sec = string_to_int_l(&str[4], 2);
 }
 
 void parse_nmea_date(DATE *date, const char *str) {
-    date->day = string_to_int(&str[0], 2);
-    date->month = string_to_int(&str[2], 2);
-    date->year = string_to_int(&str[4], 2);
+    date->day = string_to_int_l(&str[0], 2);
+    date->month = string_to_int_l(&str[2], 2);
+    date->year = string_to_int_l(&str[4], 2);
 }
 
 void parse_latitude_longitude(float *value, char *unit, const char *str, const char *unit_str) {
@@ -129,9 +129,9 @@ int parse_gps_packet(GPS_PACKET *gps_packet, const char *packet) {
             if (values_counter <= 19) {
                 GPGSV_PACKET gpgsv;
 
-                gpgsv.number_of_sentences = string_to_int(values[0], (int) strlen(values[0]));
-                gpgsv.sentence_number = string_to_int(values[1], (int) strlen(values[1]));
-                gpgsv.satellites_in_view = string_to_int(values[2], (int) strlen(values[2]));
+                gpgsv.number_of_sentences = string_to_int_l(values[0], (int) strlen(values[0]));
+                gpgsv.sentence_number = string_to_int_l(values[1], (int) strlen(values[1]));
+                gpgsv.satellites_in_view = string_to_int_l(values[2], (int) strlen(values[2]));
 
                 temp_arr = &values[3];
                 gpgsv.satellites = malloc(sizeof(GPGSV_SATELLITE) * ((values_counter - 3) / 4));
@@ -143,7 +143,7 @@ int parse_gps_packet(GPS_PACKET *gps_packet, const char *packet) {
                         int index = j;
                         int *temp_ptr = (int *) &satellite;
                         temp_ptr = temp_ptr + (2 * index);
-                        *temp_ptr = string_to_int(temp_arr[index], (int) strlen(temp_arr[index]));
+                        *temp_ptr = string_to_int_l(temp_arr[index], (int) strlen(temp_arr[index]));
                     }
                     gpgsv.satellites[satellites_counter++] = satellite;
                 }

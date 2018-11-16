@@ -4,6 +4,10 @@
 #include "file_helper.h"
 #include "helper.h"
 
+/******************************/
+/* FUNCTIONS */
+/******************************/
+
 /* Open a file and count the lines */
 FILE *open_file(int *number_of_lines, char *file_name) {
     FILE *fp;
@@ -31,8 +35,6 @@ int get_number_of_lines_in_file(const char *file_name) {
 
     return lines;
 }
-
-
 
 /* Read file */
 int read_file(const char *file_name, int *number_of_lines, const int line_size, char **lines, const char *filter) {
