@@ -5,11 +5,15 @@
 #include "gps_parser.h"
 #include "csv_parser.h"
 #include "file_helper.h"
+#include "file_selector.h"
 
 /*#define CSV_FILE "20181115-135922_jakob.csv"*/
 #define CSV_FILE "20181116-102051.csv"
 
 int main() {
+
+    select_file();
+
     int i, input, number_of_packets, number_of_lines;
     GPS_LOGGER_PACKET *gps_logger_packets;
 
