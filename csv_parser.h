@@ -35,6 +35,6 @@ int split_csv_line(char **column_values, char *line, char splitter);
 void split_gps_logger_date_time(const char *date_time_str,DATE *date,TIME *time);
 int parse_gps_logger_packet(char *line,const char splitter,GPS_LOGGER_PACKET *gps_logger_packet);
 char get_csv_file_splitter(const char *line);
-int read_gps_logger_csv_file(const char *file_name,int *number_of_packets,GPS_LOGGER_PACKET *gps_logger_packets);
+int read_gps_logger_csv_file(const char *file_name, int *number_of_packets, GPS_LOGGER_PACKET **gps_logger_packets);
 
 #endif //P1PROJECT_CSV_PARSER_H

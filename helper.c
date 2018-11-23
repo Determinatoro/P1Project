@@ -1,19 +1,25 @@
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
+#include <stdio.h>
 #include "helper.h"
+
+/******************************/
+/* PROTOTYPES */
+/******************************/
+int string_to_int_helper(const char *first,const char *last,const int str_length);
 
 /******************************/
 /* FUNCTIONS */
 /******************************/
 
 /* Remove CR and LF from a string */
-void remove_cr_lf(char *line, const int count) {
-    if (*line == '\0')
-        return;
-    else if ((*line == '\r' || *line == '\n'))
-        *line = '\0';
-    remove_cr_lf(line + 1, count);
+void remove_cr_lf(char *line) {
+    char *last = line + strlen(line) - 1;
+    if (*last == '\r' || *last == '\n') {
+        *last = '\0';
+        remove_cr_lf(line);
+    }
 }
 
 /* Find out if a string start with a given string */
@@ -30,6 +36,11 @@ int count_chars(char *s, char c) {
            : count_chars(s + 1, c) + (*s == c);
 }
 
+/* Check if string is a digit */
+int is_string_a_digit(const char *first, const char *last) {
+    return first == last ? 1 : isdigit(*first) && is_string_a_digit(first + 1, last);
+}
+
 /* Helper for the string to int functions */
 int string_to_int_helper(const char *first, const char *last, const int str_length) {
     return (int) (last >= first && isdigit(*last)
@@ -40,7 +51,8 @@ int string_to_int_helper(const char *first, const char *last, const int str_leng
 
 /* Convert string to int with a given length */
 int string_to_int_l(const char *str, const int str_length) {
-    return string_to_int_helper(str, str + str_length - 1, str_length);
+    return !is_string_a_digit(str, str + str_length - 1) ? -1 : string_to_int_helper(str, str + str_length - 1,
+                                                                                     str_length);
 }
 
 /* Convert string to int with no given length */
