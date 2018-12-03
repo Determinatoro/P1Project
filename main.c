@@ -15,7 +15,7 @@
 
 
 int main() {
-    test();
+    char *file = startUserDialog();
 
     //select_file();
     int i, input, number_of_packets;
