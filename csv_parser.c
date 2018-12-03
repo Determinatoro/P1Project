@@ -1,10 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "csv_parser.h"
 #include "file_helper.h"
-#include "helper.h"
 
 /******************************/
 /* FUNCTIONS */
@@ -41,7 +39,7 @@ char get_csv_file_splitter(const char *line) {
  * Split GPS Logger date time format into a date and time struct
  * Format example: 2018-11-16 17:00:00
  * */
-void split_gps_logger_date_time(const char *date_time_str, DATE *date, TIME *time) {
+void split_gps_logger_date_time(const char *date_time_str, H_DATE *date, H_TIME *time) {
     date->year = string_to_int_l(&date_time_str[2], 2);
     date->month = string_to_int_l(&date_time_str[5], 2);
     date->day = string_to_int_l(&date_time_str[8], 2);

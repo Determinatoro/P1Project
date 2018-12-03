@@ -16,8 +16,8 @@
 
 /* GPS LOGGER PACKET */
 typedef struct {
-    TIME time;          /* Time */
-    DATE date;          /* Date */
+    H_TIME time;          /* Time */
+    H_DATE date;          /* Date */
     double latitude;    /* Latitude */
     double longitude;   /* Longitude */
     int accuracy;       /* Accuracy in meters */
@@ -32,9 +32,9 @@ typedef struct {
 /******************************/
 
 int split_csv_line(char **column_values, char *line, char splitter);
-void split_gps_logger_date_time(const char *date_time_str,DATE *date,TIME *time);
+void split_gps_logger_date_time(const char *date_time_str,H_DATE *date,H_TIME *time);
 int parse_gps_logger_packet(char *line,const char splitter,GPS_LOGGER_PACKET *gps_logger_packet);
 char get_csv_file_splitter(const char *line);
 int read_gps_logger_csv_file(const char *file_name, int *number_of_packets, GPS_LOGGER_PACKET **gps_logger_packets);
 
-#endif //P1PROJECT_CSV_PARSER_H
+#endif

@@ -13,7 +13,7 @@
 #define GPGSV "GPGSV"
 
 typedef struct {
-    TIME time;                              /* Fix time */
+    H_TIME time;                              /* Fix time */
     float latitude;                         /* Latitude */
     char latitude_direction;                /* Latitude direction */
     float longitude;                        /* Longitude */
@@ -38,8 +38,8 @@ typedef struct {
 } GPGGA_PACKET;
 
 typedef struct {
-    TIME time;                              /* Fix time */
-    DATE date;                              /* Fix date */
+    H_TIME time;                              /* Fix time */
+    H_DATE date;                              /* Fix date */
     char active;                            /* Status A = Active or V = Void */
     float latitude;                         /* Latitude */
     char latitude_direction;                /* Latitude direction */

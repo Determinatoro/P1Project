@@ -30,7 +30,7 @@ int starts_with_string(const char *str, const char *prefix) {
 }
 
 /* Count number of a given char in a string */
-int count_chars(char *s, char c) {
+int count_chars(const char *s, const char c) {
     return *s == '\0'
            ? 0
            : count_chars(s + 1, c) + (*s == c);

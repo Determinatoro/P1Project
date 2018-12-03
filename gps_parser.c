@@ -27,13 +27,13 @@ int split_nmea_packet(char **values, char *packet) {
     return values_counter;
 }
 
-void parse_nmea_time(TIME *time, const char *str) {
+void parse_nmea_time(H_TIME *time, const char *str) {
     time->hour = string_to_int_l(&str[0], 2);
     time->min = string_to_int_l(&str[2], 2);
     time->sec = string_to_int_l(&str[4], 2);
 }
 
-void parse_nmea_date(DATE *date, const char *str) {
+void parse_nmea_date(H_DATE *date, const char *str) {
     date->day = string_to_int_l(&str[0], 2);
     date->month = string_to_int_l(&str[2], 2);
     date->year = string_to_int_l(&str[4], 2);
@@ -69,7 +69,7 @@ int parse_gps_packet(GPS_PACKET *gps_packet, const char *packet) {
                 GPGGA_PACKET gpgga;
 
                 /* Time */
-                TIME time;
+                H_TIME time;
                 parse_nmea_time(&time, values[0]);
                 gpgga.time = time;
                 /* Latitude */
@@ -100,7 +100,7 @@ int parse_gps_packet(GPS_PACKET *gps_packet, const char *packet) {
                 GPRMC_PACKET gprmc;
 
                 /* Time */
-                TIME time;
+                H_TIME time;
                 parse_nmea_time(&time, values[0]);
                 gprmc.time = time;
                 /* A = Active V = Void */
@@ -114,7 +114,7 @@ int parse_gps_packet(GPS_PACKET *gps_packet, const char *packet) {
                 /* Track angle in degrees */
                 gprmc.track_angle = strtof(values[7], NULL);
                 /* Date */
-                DATE date;
+                H_DATE date;
                 parse_nmea_date(&date, values[8]);
                 gprmc.date = date;
                 /* Magnetic variation */
