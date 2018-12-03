@@ -20,5 +20,6 @@ void startUserDialog(DIRENT *dirent_arr, int number_of_dirents, char *current_fo
 char *get_new_folder(char *current_folder, char *folder);
 char *go_back(char *current_folder);
 void open_new_folder(char *folder);
+int is_at_documents(char *folder);
 
 #endif

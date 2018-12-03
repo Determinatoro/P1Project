@@ -13,9 +13,12 @@ void print_directory_content(const DIRENT *dirent_arr, int number_of_dirents) {
     int i;
 
     printf("%2d | %s\n", 1, "Go back");
-    for (i = 0; i < number_of_dirents; i++) {
-        printf("%2d | %s\n", i + 2, dirent_arr[i].d_name);
-    }
+    if(number_of_dirents > 0){
+        for (i = 0; i < number_of_dirents; i++) {
+            printf("%2d | %s\n", i + 2, dirent_arr[i].d_name);
+        }
+    } else
+        printf("FOLDER IS EMPTY!\n");
 }
 
 int get_directory_content(const char *dir_path, DIRENT **dirent_arr) {
@@ -35,8 +38,9 @@ int get_directory_content(const char *dir_path, DIRENT **dirent_arr) {
         number_of_dirents = 0;
 
         while((dirent = readdir(dir)) != NULL){
-            if (dirent->d_name[0] != '.')
+            if (dirent->d_name[0] != '.'){
                 dirent_arr[0][number_of_dirents++] = *dirent;
+            }
         }
 
         closedir(dir);
@@ -58,29 +62,43 @@ void test() {
 }
 
 void startUserDialog(DIRENT *dirent_arr, int number_of_dirents, char *current_folder){
-    int choice = 1;
-    char *new_folder;
+    int choice = 1, res;
+    char *new_folder, *file_selected;
 
-    printf("Currently showing results for folder %s\n", current_folder);
-    while(choice >= 1 && choice < (number_of_dirents + 2)){
-        printf("Select a folder or file to continue:\n");
+    while(choice >= 1 && choice <= (number_of_dirents + 2)){
         printf("Provide folder index here -> ");
-        scanf("%d", &choice);
+        res = scanf("%d", &choice);
 
         /* Go back */
-        if(choice == 1){
-            new_folder = go_back(current_folder);
-            open_new_folder(new_folder);
-        }
-        else if(dirent_arr[choice - 2].d_type != 0) {
-            new_folder = get_new_folder(current_folder, dirent_arr[choice - 2].d_name);
-            open_new_folder(new_folder);
-        } else {
-            if(is_CSV_File(dirent_arr[choice - 2].d_name) == 0) {
-                /* Select file */
-                printf("File selected: %s\n", dirent_arr[choice - 2].d_name);
-            } else{
-                printf("The file selected is not a .CSV file! Please try again.\n");
+        if(res > 0){
+            if(choice > 0 && choice < (number_of_dirents + 2)){
+                if(choice == 1){
+                    printf("Debug\n");
+                    printf("Res: %d\n", is_at_documents(current_folder));
+                    if(is_at_documents(current_folder) != 0){
+                        new_folder = go_back(current_folder);
+                        open_new_folder(new_folder);
+                    } else
+                        printf("You can't go further back!\n");
+                }
+                else if(dirent_arr[choice - 2].d_type != 0 && dirent_arr[choice - 2].d_type != 8) {
+                    printf("Debug2\n");
+                    new_folder = get_new_folder(current_folder, dirent_arr[choice - 2].d_name);
+                    open_new_folder(new_folder);
+                } else {
+                    printf("Debug3\n");
+                    if(is_CSV_File(dirent_arr[choice - 2].d_name) == 0) {
+                        /* Select file */
+                        file_selected = malloc(sizeof(char) * (strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 2));
+                        strcpy(file_selected, current_folder);
+                        strcpy(file_selected + strlen(current_folder), "\\");
+                        strcpy(file_selected + strlen(current_folder) + 1, dirent_arr[choice - 2].d_name);
+                        file_selected[(strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 2)] = '\0';
+                        printf("File selected: %s\n", file_selected);
+                    } else{
+                        printf("The file selected is not a .CSV file! Please try again.\n");
+                    }
+                }
             }
         }
     }
@@ -88,18 +106,12 @@ void startUserDialog(DIRENT *dirent_arr, int number_of_dirents, char *current_fo
 
 void open_new_folder(char *folder){
     DIRENT *dirent_arr;
-    char *new_folder;
     int number_of_dirents;
 
     number_of_dirents = get_directory_content(folder, &dirent_arr);
-    if(number_of_dirents > 0){
-        print_directory_content(dirent_arr, number_of_dirents);
-        startUserDialog(dirent_arr, number_of_dirents, folder);
-    } else{
-        printf("The folder you selected was empty! (%s)\n", folder);
-        new_folder = go_back(folder);
-        open_new_folder(new_folder);
-    }
+    printf("Showing results for folder %s\n", folder);
+    print_directory_content(dirent_arr, number_of_dirents);
+    startUserDialog(dirent_arr, number_of_dirents, folder);
 }
 
 char *get_new_folder(char *current_folder, char *folder){
@@ -113,7 +125,7 @@ char *get_new_folder(char *current_folder, char *folder){
 }
 
 char *go_back(char *current_folder){
-    char *new_folder;
+    char *new_folder = "";
     int i, length = strlen(current_folder);
     for(i = length; i > 0; i--){
         if(current_folder[i] == '\\'){
@@ -186,4 +198,15 @@ int is_CSV_File(char *fileName){
         return strcmp(s, ".csv");
     else
         return -1;
+}
+
+int is_at_documents(char *folder){
+    int i, length = strlen(folder);
+    for(i = length; i > 0; i--){
+        if(folder[i] == '\\'){
+            return strncmp(folder + (i+1), "Documents", 9);
+        }
+    }
+
+    return -1;
 }

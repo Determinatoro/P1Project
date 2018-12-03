@@ -15,10 +15,13 @@
 
 
 int main() {
+    test();
+
     //select_file();
     int i, input, number_of_packets;
     GPS_LOGGER_PACKET *gps_logger_packets;
 
+    return EXIT_SUCCESS;
     read_gps_logger_csv_file(CSV_FILE, &number_of_packets, &gps_logger_packets);
     printf("\n");
     /*for (i = 0; i < number_of_packets; i++) {
