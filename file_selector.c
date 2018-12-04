@@ -65,7 +65,7 @@ char *startUserDialog(){
     open_new_folder(&dirent_arr, &number_of_dirents, current_folder);
 
     while(1){
-        printf("Provide folder index here -> ");
+        printf("Select index -> ");
         res = scanf("%d", &choice);
 
         if(res == 1){
@@ -83,11 +83,11 @@ char *startUserDialog(){
                 } else {
                     if(is_CSV_File(dirent_arr[choice - 2].d_name) == 0) {
                         /* Select file */
-                        file_selected = malloc(sizeof(char) * (strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 2));
+                        file_selected = calloc(sizeof(char), (strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 2));
                         strcpy(file_selected, current_folder);
                         strcpy(file_selected + strlen(current_folder), "\\");
                         strcpy(file_selected + strlen(current_folder) + 1, dirent_arr[choice - 2].d_name);
-                        file_selected[(strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 2)] = '\0';
+                        file_selected[(strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 1)] = '\0';
                         printf("File selected: %s\n", file_selected);
                         return file_selected;
                     } else{
@@ -101,17 +101,16 @@ char *startUserDialog(){
 
 void open_new_folder(DIRENT **dirent_arr, int *number_of_dirents, char *folder){
     *number_of_dirents = get_directory_content(folder, &(*dirent_arr));
-    printf("Showing results for folder %s\n", folder);
     print_directory_content(*dirent_arr, *number_of_dirents);
 }
 
 char *get_new_folder(char *current_folder, char *folder){
     char *new_folder = calloc(sizeof(char), (strlen(current_folder) + strlen(folder) + 2));
+    int length = (strlen(current_folder) + strlen(folder) + 2);
     strcpy(new_folder, current_folder);
     strcpy(new_folder + strlen(current_folder), "\\");
     strcpy(new_folder + strlen(current_folder) + 1, folder);
-    new_folder[(strlen(current_folder) + strlen(folder)) + 2] = '\0';
-
+    new_folder[(strlen(current_folder) + strlen(folder)) + 1] = '\0';
     return new_folder;
 }
 
@@ -120,7 +119,7 @@ char *go_back(char *current_folder){
     int i, length = strlen(current_folder);
     for(i = length; i > 0; i--){
         if(current_folder[i] == '\\'){
-            new_folder = calloc(sizeof(char), (size_t)(i));
+            new_folder = calloc(sizeof(char), (size_t)(i) + 1);
             current_folder[i] = '\0';
             strcpy(new_folder, current_folder);
             break;
