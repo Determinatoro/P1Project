@@ -2,24 +2,6 @@
 #define P1PROJECT_HELPER_H
 
 /******************************/
-/* STRUCTS */
-/******************************/
-
-/* TIME */
-typedef struct {
-    int hour;     /* Number of hours 24 format */
-    int min;      /* Number of minutes */
-    int sec;      /* Number of seconds */
-} H_TIME;
-
-/* DATE */
-typedef struct {
-    int day;      /* Day in month */
-    int month;    /* Month of year */
-    int year;     /* Year in yy format the number in the parenteses --> 20(18) */
-} H_DATE;
-
-/******************************/
 /* PROTOTYPES */
 /******************************/
 

@@ -9,8 +9,8 @@
 /******************************/
 
 int get_number_of_lines_in_file_helper(FILE *file);
-FILE *open_file_r(int *number_of_lines, char *file_name);
-int get_number_of_lines_in_file(const char *file_name);
+
+FILE *open_file_r(int *number_of_lines, char *file_path);
 
 /******************************/
 /* FUNCTIONS */
@@ -47,11 +47,18 @@ int get_number_of_lines_in_file(const char *file_name) {
     return 0;
 }
 
+/* OPen to write to a file */
+FILE *open_file_w(const char *file_path) {
+    FILE *fp;
+    fp = fopen(file_path, "w");
+    return fp;
+}
+
 /* Open a file and count the lines */
-FILE *open_file_r(int *number_of_lines, char *file_name) {
+FILE *open_file_r(int *number_of_lines, char *file_path) {
     FILE *fp;
     *number_of_lines = 0;
-    fp = fopen(file_name, "r");
+    fp = fopen(file_path, "r");
     if (fp != NULL) {
         *number_of_lines = get_number_of_lines_in_file_helper(fp);
     }

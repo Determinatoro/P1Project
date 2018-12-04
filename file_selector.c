@@ -4,6 +4,25 @@
 #include <string.h>
 #include <malloc.h>
 #include <unistd.h>
+#include <stdlib.h>
+
+/******************************/
+/* PROTOTYPES */
+/******************************/
+
+int is_csv_file(char *fileName);
+
+void print_directory_content(const DIRENT *dirent_arr, int number_of_dirents);
+
+int get_directory_content(const char *dir_path, DIRENT **dirent_arr);
+
+char *get_new_folder(char *current_folder, char *folder);
+
+char *go_back(char *current_folder);
+
+void open_new_folder(DIRENT **dirent_arr, int *number_of_dirents, char *folder);
+
+int is_at_documents(char *folder);
 
 /******************************/
 /* FUNCTIONS */
@@ -13,7 +32,7 @@ void print_directory_content(const DIRENT *dirent_arr, int number_of_dirents) {
     int i;
 
     printf("%2d | %s\n", 1, "Go back");
-    if(number_of_dirents > 0){
+    if (number_of_dirents > 0) {
         for (i = 0; i < number_of_dirents; i++) {
             printf("%2d | %s\n", i + 2, dirent_arr[i].d_name);
         }
@@ -28,7 +47,7 @@ int get_directory_content(const char *dir_path, DIRENT **dirent_arr) {
 
     dir = opendir(dir_path);
     if (dir != NULL) {
-        while(readdir(dir) != NULL)
+        while (readdir(dir) != NULL)
             number_of_dirents++;
 
         rewinddir(dir);
@@ -37,8 +56,8 @@ int get_directory_content(const char *dir_path, DIRENT **dirent_arr) {
 
         number_of_dirents = 0;
 
-        while((dirent = readdir(dir)) != NULL){
-            if (dirent->d_name[0] != '.'){
+        while ((dirent = readdir(dir)) != NULL) {
+            if (dirent->d_name[0] != '.') {
                 (*dirent_arr)[number_of_dirents++] = *dirent;
             }
         }
@@ -50,7 +69,7 @@ int get_directory_content(const char *dir_path, DIRENT **dirent_arr) {
     return 0;
 }
 
-char *start_user_dialog(){
+char *start_user_dialog() {
     DIRENT *dirent_arr;
     int choice = 1, res = 0, number_of_dirents = 0;
     char *file_selected, *current_folder;
@@ -64,26 +83,26 @@ char *start_user_dialog(){
 
     open_new_folder(&dirent_arr, &number_of_dirents, current_folder);
 
-    while(1){
+    while (1) {
         printf("Select index -> ");
         res = scanf("%d", &choice);
 
-        if(res == 1){
-            if(choice > 0 && (choice - 2) < number_of_dirents){
-                if(choice == 1){
-                    if(is_at_documents(current_folder) != 0){
+        if (res == 1) {
+            if (choice > 0 && (choice - 2) < number_of_dirents) {
+                if (choice == 1) {
+                    if (is_at_documents(current_folder) != 0) {
                         current_folder = go_back(current_folder);
                         open_new_folder(&dirent_arr, &number_of_dirents, current_folder);
                     } else
                         printf("You can't go further back!\n");
-                }
-                else if(dirent_arr[choice - 2].d_type != 0 && dirent_arr[choice - 2].d_type != 8) {
+                } else if (dirent_arr[choice - 2].d_type != 0 && dirent_arr[choice - 2].d_type != 8) {
                     current_folder = get_new_folder(current_folder, dirent_arr[choice - 2].d_name);
                     open_new_folder(&dirent_arr, &number_of_dirents, current_folder);
                 } else {
-                    if(is_CSV_file(dirent_arr[choice - 2].d_name) == 0) {
+                    if (is_csv_file(dirent_arr[choice - 2].d_name) == 0) {
                         /* Select file */
-                        file_selected = calloc(sizeof(char), (strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 2));
+                        file_selected = calloc(sizeof(char),
+                                               (strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 2));
                         strcpy(file_selected, current_folder);
                         strcpy(file_selected + strlen(current_folder), "\\");
                         strcpy(file_selected + strlen(current_folder) + 1, dirent_arr[choice - 2].d_name);
@@ -91,7 +110,7 @@ char *start_user_dialog(){
                         system("cls");
                         printf("File selected: %s\n", file_selected);
                         return file_selected;
-                    } else{
+                    } else {
                         printf("The file selected is not a .CSV file! Please try again.\n");
                     }
                 }
@@ -100,13 +119,13 @@ char *start_user_dialog(){
     }
 }
 
-void open_new_folder(DIRENT **dirent_arr, int *number_of_dirents, char *folder){
+void open_new_folder(DIRENT **dirent_arr, int *number_of_dirents, char *folder) {
     *number_of_dirents = get_directory_content(folder, &(*dirent_arr));
     printf("Showing results for folder %s\n", folder);
     print_directory_content(*dirent_arr, *number_of_dirents);
 }
 
-char *get_new_folder(char *current_folder, char *folder){
+char *get_new_folder(char *current_folder, char *folder) {
     char *new_folder = calloc(sizeof(char), (strlen(current_folder) + strlen(folder) + 2));
     int length = (strlen(current_folder) + strlen(folder) + 2);
     strcpy(new_folder, current_folder);
@@ -116,12 +135,12 @@ char *get_new_folder(char *current_folder, char *folder){
     return new_folder;
 }
 
-char *go_back(char *current_folder){
+char *go_back(char *current_folder) {
     char *new_folder = "";
     int i, length = strlen(current_folder);
-    for(i = length; i > 0; i--){
-        if(current_folder[i] == '\\'){
-            new_folder = calloc(sizeof(char), (size_t)(i) + 1);
+    for (i = length; i > 0; i--) {
+        if (current_folder[i] == '\\') {
+            new_folder = calloc(sizeof(char), (size_t) (i) + 1);
             current_folder[i] = '\0';
             strcpy(new_folder, current_folder);
             break;
@@ -131,20 +150,20 @@ char *go_back(char *current_folder){
     return new_folder;
 }
 
-int is_CSV_file(char *fileName){
+int is_csv_file(char *fileName) {
     /* Find the last '.' char in the filename to get the file extension */
-    char *s = strrchr (fileName, '.');
-    if(s != NULL)
+    char *s = strrchr(fileName, '.');
+    if (s != NULL)
         return strcmp(s, ".csv");
     else
         return 0;
 }
 
-int is_at_documents(char *folder){
+int is_at_documents(char *folder) {
     int i, length = strlen(folder);
-    for(i = length; i > 0; i--){
-        if(folder[i] == '\\'){
-            return strncmp(folder + (i+1), "Documents", 9);
+    for (i = length; i > 0; i--) {
+        if (folder[i] == '\\') {
+            return strncmp(folder + (i + 1), "Documents", 9);
         }
     }
     return -1;
