@@ -15,8 +15,7 @@
 
 
 int main() {
-    char *file = startUserDialog();
-
+    char *file = start_user_dialog();
     //select_file();
     int i, input, number_of_packets;
     GPS_LOGGER_PACKET *gps_logger_packets;

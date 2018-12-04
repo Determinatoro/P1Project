@@ -50,12 +50,12 @@ int get_directory_content(const char *dir_path, DIRENT **dirent_arr) {
     return 0;
 }
 
-char *startUserDialog(){
+char *start_user_dialog(){
     DIRENT *dirent_arr;
-    int choice = 1, res, number_of_dirents = 0;
+    int choice = 1, res = 0, number_of_dirents = 0;
     char *file_selected, *current_folder;
-
     char *p = getenv("USERNAME");
+
     current_folder = malloc(sizeof(char) * (21 + strlen(p)));
     strcpy(current_folder, "C:\\Users\\");
     strcpy(current_folder + 9, p);
@@ -81,13 +81,14 @@ char *startUserDialog(){
                     current_folder = get_new_folder(current_folder, dirent_arr[choice - 2].d_name);
                     open_new_folder(&dirent_arr, &number_of_dirents, current_folder);
                 } else {
-                    if(is_CSV_File(dirent_arr[choice - 2].d_name) == 0) {
+                    if(is_CSV_file(dirent_arr[choice - 2].d_name) == 0) {
                         /* Select file */
                         file_selected = calloc(sizeof(char), (strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 2));
                         strcpy(file_selected, current_folder);
                         strcpy(file_selected + strlen(current_folder), "\\");
                         strcpy(file_selected + strlen(current_folder) + 1, dirent_arr[choice - 2].d_name);
                         file_selected[(strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 1)] = '\0';
+                        system("cls");
                         printf("File selected: %s\n", file_selected);
                         return file_selected;
                     } else{
@@ -101,6 +102,7 @@ char *startUserDialog(){
 
 void open_new_folder(DIRENT **dirent_arr, int *number_of_dirents, char *folder){
     *number_of_dirents = get_directory_content(folder, &(*dirent_arr));
+    printf("Showing results for folder %s\n", folder);
     print_directory_content(*dirent_arr, *number_of_dirents);
 }
 
@@ -129,7 +131,7 @@ char *go_back(char *current_folder){
     return new_folder;
 }
 
-int is_CSV_File(char *fileName){
+int is_CSV_file(char *fileName){
     /* Find the last '.' char in the filename to get the file extension */
     char *s = strrchr (fileName, '.');
     if(s != NULL)
