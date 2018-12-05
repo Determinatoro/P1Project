@@ -4,6 +4,8 @@
 #include <math.h>
 #include <string.h>
 
+/*#define DEBUG 1*/
+
 #include "gps_logger_helper.h"
 #include "file_helper.h"
 #include "csv_helper.h"
@@ -79,10 +81,13 @@ int read_gps_logger_csv_file(const char *file_name, int *number_of_packets, GPS_
     char **lines = NULL, *headers, splitter;
     int i, line_counter = 0;
 
+    /* Set start value */
     *number_of_packets = 0;
 
+    /* Read file, get all the lines in the file back */
     if (read_file(file_name, &line_counter, GPS_LOGGER_LINE_SIZE, &lines, "")) {
-        gps_logger_packets[0] = malloc(sizeof(GPS_LOGGER_PACKET) * line_counter);
+        *gps_logger_packets = malloc(sizeof(GPS_LOGGER_PACKET) * line_counter);
+        /* Get headers */
         headers = lines[0];
         splitter = get_csv_file_splitter(headers);
         lines = &lines[1];
@@ -90,7 +95,7 @@ int read_gps_logger_csv_file(const char *file_name, int *number_of_packets, GPS_
         for (i = 0; i < line_counter - 1; i++) {
             GPS_LOGGER_PACKET gps_logger_packet;
             if (parse_gps_logger_packet(lines[i], splitter, &gps_logger_packet)) {
-                gps_logger_packets[0][(*number_of_packets)++] = gps_logger_packet;
+                (*gps_logger_packets)[(*number_of_packets)++] = gps_logger_packet;
             }
         }
 
@@ -147,11 +152,26 @@ int get_speed_type(double speed) {
     } else if (speed > WALK_SPEED_MIN && speed < WALK_SPEED_MAX_BIKE_SPEED_MIN) {
         return WALK;
     } else if (speed >= WALK_SPEED_MAX_BIKE_SPEED_MIN && speed < BIKE_SPEED_MAX_CAR_SPEED_MIN) {
-        return BIKE;
+        return BICYCLE;
     } else if (speed >= BIKE_SPEED_MAX_CAR_SPEED_MIN && speed < CAR_SPEED_MAX) {
         return CAR;
     } else {
         return PLANE;
+    }
+}
+
+char *get_speed_type_str(SPEED_TYPE speed_type) {
+    switch (speed_type) {
+        case STOPPED:
+            return "STOPPED";
+        case WALK:
+            return "WALK";
+        case BICYCLE:
+            return "BICYCLE";
+        case CAR:
+            return "CAR";
+        case PLANE:
+            return "PLANE";
     }
 }
 
@@ -238,9 +258,11 @@ void split_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
         }
     }
 
+
+#ifdef DEBUG
     /* Write out the block data */
-    /*
-    for (i = 0; i < block_data_size; i++) {
+
+    for (i = 0; i < block_data_arr_size; i++) {
         printf("\n\nBLOCK %d\n\n", i);
 
         for (j = 0; j < block_data_arr[i].gps_logger_packets_size; j++) {
@@ -254,7 +276,8 @@ void split_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
                    block_data_arr[i].gps_logger_packets[j].speed);
         }
     }
-    */
+#endif
+
 
     /* Allocate space for the tour data */
     *out_tour_data_arr = malloc(sizeof(TOUR_DATA) * block_data_arr_size);
@@ -272,7 +295,9 @@ void split_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
                 int end_block_index = i;
                 /* Find out if there are any BIKE or CAR blocks before this one */
                 for (j = i - 1; j >= 0; j--) {
-                    if (block_data_arr[j].highest_speed_type == BIKE || block_data_arr[j].highest_speed_type == CAR)
+                    if ((block_data_arr[j].highest_speed_type == BICYCLE &&
+                         block_data_arr[j].average_speed > WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
+                            block_data_arr[j].highest_speed_type == CAR)
                         start_block_index = j;
                     else
                         break;
@@ -280,7 +305,9 @@ void split_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
 
                 /* Find out if there are any BIKE or CAR block after this one */
                 for (j = i + 1; j < block_data_arr_size; j++) {
-                    if (block_data_arr[j].highest_speed_type == BIKE || block_data_arr[j].highest_speed_type == CAR)
+                    if ((block_data_arr[j].highest_speed_type == BICYCLE &&
+                         block_data_arr[j].average_speed > WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
+                            block_data_arr[j].highest_speed_type == CAR)
                         end_block_index = j;
                     else
                         break;
@@ -328,7 +355,9 @@ void split_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
 
                 /* Find out if there are any BIKE or CAR blocks before this one */
                 for (j = i - 1; j >= 0; j--) {
-                    if (block_data_arr[j].highest_speed_type == BIKE || block_data_arr[j].highest_speed_type == CAR)
+                    if ((block_data_arr[j].highest_speed_type == BICYCLE &&
+                         block_data_arr[j].average_speed > WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
+                            block_data_arr[j].highest_speed_type == CAR)
                         start_tour_block_index = j;
                     else
                         break;
@@ -336,7 +365,9 @@ void split_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
 
                 /* Find out if there are any BIKE or CAR block after this one */
                 for (j = i + 1; j < block_data_arr_size; j++) {
-                    if (block_data_arr[j].highest_speed_type == BIKE || block_data_arr[j].highest_speed_type == CAR)
+                    if ((block_data_arr[j].highest_speed_type == BICYCLE &&
+                         block_data_arr[j].average_speed > WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
+                            block_data_arr[j].highest_speed_type == CAR)
                         end_tour_block_index = j;
                     else
                         break;

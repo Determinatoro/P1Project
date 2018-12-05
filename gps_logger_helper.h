@@ -14,8 +14,8 @@
 #define GPS_LOGGER_NUM_OF_COL   13
 
 #define WALK_SPEED_MIN                      0
-#define WALK_SPEED_MAX_BIKE_SPEED_MIN       7.5f
-#define BIKE_SPEED_MAX_CAR_SPEED_MIN        15.5f
+#define WALK_SPEED_MAX_BIKE_SPEED_MIN       6.0f
+#define BIKE_SPEED_MAX_CAR_SPEED_MIN        16.5f
 #define CAR_SPEED_MAX                       500
 
 /******************************/
@@ -25,7 +25,7 @@
 typedef struct tm TIME_DATA;
 
 enum Speed_Type {
-    STOPPED, WALK, BIKE, CAR, PLANE
+    STOPPED, WALK, BICYCLE, CAR, PLANE
 };
 typedef enum Speed_Type SPEED_TYPE;
 

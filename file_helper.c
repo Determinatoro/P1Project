@@ -8,7 +8,7 @@
 /* PROTOTYPES */
 /******************************/
 
-int get_number_of_lines_in_file_helper(FILE *file);
+int get_number_of_lines_in_file(FILE *file);
 
 FILE *open_file_r(int *number_of_lines, char *file_path);
 
@@ -17,7 +17,7 @@ FILE *open_file_r(int *number_of_lines, char *file_path);
 /******************************/
 
 /* Count lines in file */
-int get_number_of_lines_in_file_helper(FILE *file) {
+int get_number_of_lines_in_file(FILE *file) {
     int lines = 1, ch;
     if (file != NULL) {
         while ((ch = fgetc(file)) != EOF) {
@@ -30,20 +30,6 @@ int get_number_of_lines_in_file_helper(FILE *file) {
         return lines;
     }
 
-    return 0;
-}
-
-/* Open file and count the lines */
-int get_number_of_lines_in_file(const char *file_name) {
-    int lines;
-    FILE *fp;
-
-    fp = fopen(file_name, "r");
-    if (fp == NULL) {
-        lines = get_number_of_lines_in_file_helper(fp);
-        fclose(fp);
-        return lines;
-    }
     return 0;
 }
 
@@ -60,7 +46,7 @@ FILE *open_file_r(int *number_of_lines, char *file_path) {
     *number_of_lines = 0;
     fp = fopen(file_path, "r");
     if (fp != NULL) {
-        *number_of_lines = get_number_of_lines_in_file_helper(fp);
+        *number_of_lines = get_number_of_lines_in_file(fp);
     }
 
     return fp;
@@ -74,29 +60,38 @@ int read_file(const char *file_name, int *number_of_lines, const int line_size, 
 
     *number_of_lines = 0;
 
+    /* Open file with read privileges and get number of lines */
     if ((fp = open_file_r(&line_counter, (char *) file_name)) == NULL) {
         printf("\nCould not open file: %s\n", file_name);
         return 0;
     }
 
-    lines[0] = malloc((size_t) (line_size * line_counter));
-    str = malloc((size_t) line_size);
+    /* Allocate space for the lines */
+    *lines = malloc((size_t) (line_size * line_counter));
+    str = malloc(sizeof(char) * line_size);
 
+    /* Read each line */
     while (fgets(str, line_size, fp) != NULL) {
+        /* Copy the line content */
         line = malloc(strlen(str));
         strcpy(line, str);
+        /* Remove CR and LF from the line */
         remove_cr_lf(line);
 
+        /* If the line is empty skip it */
         if (strcmp(line, "") == 0)
             continue;
+            /* If the filter is set to nothing */
         else if (strcmp(filter, "") == 0) {
-            lines[0][(*number_of_lines)++] = line;
-        } else {
+            (*lines)[(*number_of_lines)++] = line;
+        } /* If the line starts with the filter */
+        else {
             if (starts_with_string(line, filter)) {
-                lines[0][(*number_of_lines)++] = line;
+                (*lines)[(*number_of_lines)++] = line;
             }
         }
     }
+    /* Close file */
     fclose(fp);
 
     return 1;
