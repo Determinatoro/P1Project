@@ -139,6 +139,9 @@ int write_gps_logger_csv_file(const char *file_path, TOUR_DATA tour_data) {
 
     fclose(fp);
 
+    system("cls");
+    printf("Analyze finished!\n\nNew file saved at %s\n", file_path);
+
     return 1;
 }
 

@@ -13,9 +13,10 @@ int main() {
     int i, number_of_packets, tour_data_arr_size;
     GPS_LOGGER_PACKET *gps_logger_packets;
     TOUR_DATA *tour_data_arr;
+    char *folder = NULL;
 
     /* Get path for the selected file */
-    char *file = start_user_dialog();
+    char *file = start_user_dialog(&folder);
     /* Read the file and get the packets */
     if (!read_gps_logger_csv_file(file, &number_of_packets, &gps_logger_packets)) {
         exit(0);
@@ -31,8 +32,11 @@ int main() {
 
     /* Print the tours */
     for (i = 0; i < tour_data_arr_size; i++) {
-        char *file_name = calloc(sizeof(char), 10);
-        sprintf(file_name, "tour%d.csv", i + 1);
+        char *file_name = calloc(sizeof(char), strlen(folder) + 11);
+        strcpy(file_name, folder);
+        strcpy(file_name + strlen(folder), "\\");
+        sprintf(file_name + strlen(folder) + 1, "tour%d.csv", i + 1);
+        file_name[strlen(folder) + 10] = '\0';
         write_gps_logger_csv_file(file_name, tour_data_arr[i]);
     }
 
