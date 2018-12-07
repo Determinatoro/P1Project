@@ -30,6 +30,8 @@ int main() {
     /* Split the packets into tours */
     split_gps_logger_packets_in_tours(gps_logger_packets, number_of_packets, &tour_data_arr, &tour_data_arr_size);
 
+    printf("\nAnalyze finished!\n");
+
     /* Print the tours */
     for (i = 0; i < tour_data_arr_size; i++) {
         char *file_name = calloc(sizeof(char), strlen(folder) + 11);
