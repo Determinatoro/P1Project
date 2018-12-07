@@ -2,6 +2,7 @@
 #include <math.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "helper.h"
 
 /******************************/
@@ -58,4 +59,11 @@ int string_to_int_l(const char *str, const int str_length) {
 /* Convert string to int with no given length */
 int string_to_int(const char *str) {
     return string_to_int_helper(str, str + strlen(str) - 1, (const int) strlen(str));
+}
+
+/* Clear the screen in the CLI */
+void clear_screen() {
+    int s = system("cls");
+    if (s != 0)
+        system("clear");
 }

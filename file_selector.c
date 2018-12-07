@@ -13,7 +13,7 @@
 
 int is_csv_file(char *fileName);
 
-void print_directory_content(const DIRENT *dirent_arr, int number_of_dirents);
+void print_directory_content(const char *current_folder, const DIRENT *dirent_arr, int number_of_dirents);
 
 int get_directory_content(const char *dir_path, DIRENT **dirent_arr);
 
@@ -23,24 +23,24 @@ char *go_back(char *current_folder);
 
 void open_new_folder(DIRENT **dirent_arr, int *number_of_dirents, char *folder);
 
-int is_at_documents(char *folder);
+int is_at_documents(const char *folder);
 
 /******************************/
 /* FUNCTIONS */
 /******************************/
 
-void print_directory_content(const DIRENT *dirent_arr, int number_of_dirents) {
-    int i;
-
-    printf("%2d | %s\n", 1, "Go back");
+void print_directory_content(const char *current_folder, const DIRENT *dirent_arr, int number_of_dirents) {
+    int i, start_index = 1;
+    printf("%2d | %s\n", start_index++, "Go back");
     if (number_of_dirents > 0) {
         for (i = 0; i < number_of_dirents; i++) {
-            printf("%2d | %s\n", i + 2, dirent_arr[i].d_name);
+            printf("%2d | %s\n", i + start_index, dirent_arr[i].d_name);
         }
     } else
         printf("FOLDER IS EMPTY!\n");
 }
 
+/* Get the directory content back in a DIRENT array */
 int get_directory_content(const char *dir_path, DIRENT **dirent_arr) {
     DIR *dir;
     int number_of_dirents = 0;
@@ -48,17 +48,21 @@ int get_directory_content(const char *dir_path, DIRENT **dirent_arr) {
 
     dir = opendir(dir_path);
     if (dir != NULL) {
+        /* Get number of files and folders in the directory */
         while (readdir(dir) != NULL)
             number_of_dirents++;
 
+        /* Reset pointer */
         rewinddir(dir);
 
-        (*dirent_arr) = malloc(sizeof(DIRENT) * number_of_dirents);
+        *dirent_arr = malloc(sizeof(DIRENT) * number_of_dirents);
 
         number_of_dirents = 0;
 
         while ((dirent = readdir(dir)) != NULL) {
+            /* Filter hidden files and folders away */
             if (dirent->d_name[0] != '.') {
+                /* Only show CSV files and folders */
                 if(((dirent->d_type == 0 || dirent->d_type == 8) && is_csv_file(dirent->d_name) == 0) ||
                     (dirent->d_type != 0 && dirent->d_type != 8)){
                     (*dirent_arr)[number_of_dirents++] = *dirent;
@@ -78,20 +82,16 @@ char *start_user_dialog(char **folder) {
     int choice = 1, res = 0, number_of_dirents = 0;
     char *file_selected, *current_folder;
     char *p = getenv("USERNAME");
-    char choiceStr[128];
-    char *choiceStrTemp;
+    char choiceStr[5];
 
-    current_folder = malloc(sizeof(char) * (21 + strlen(p)));
-    strcpy(current_folder, "C:\\Users\\");
-    strcpy(current_folder + 9, p);
-    strcpy(current_folder + (9 + strlen(p)), "\\Documents");
-    current_folder[21 + strlen(p)] = '\0';
+    current_folder = malloc(sizeof(char) * sizeof(DOCUMENTS_FOLDER) + strlen(p));
+    sprintf(current_folder, DOCUMENTS_FOLDER, p);
 
     open_new_folder(&dirent_arr, &number_of_dirents, current_folder);
 
     while (1) {
         printf("Use 'exit' to terminate the program.\nSelect index -> ");
-        res = scanf(" %s", choiceStr);
+        res = scanf(" %4s", choiceStr);
 
         if (res == 1) {
             if(is_exit_cmd(choiceStr)){
@@ -122,7 +122,7 @@ char *start_user_dialog(char **folder) {
                             file_selected[(strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 1)] = '\0';
                             *folder = malloc(sizeof(char) * strlen(current_folder));
                             *folder = current_folder;
-                            system("cls");
+                            clear_screen();
                             printf("File selected: %s\n", file_selected);
                             return file_selected;
                         } else {
@@ -136,10 +136,10 @@ char *start_user_dialog(char **folder) {
 }
 
 void open_new_folder(DIRENT **dirent_arr, int *number_of_dirents, char *folder) {
-    system("cls");
+    clear_screen();
     *number_of_dirents = get_directory_content(folder, &(*dirent_arr));
     printf("Showing results for folder %s\n", folder);
-    print_directory_content(*dirent_arr, *number_of_dirents);
+    print_directory_content(folder, *dirent_arr, *number_of_dirents);
 }
 
 char *get_new_folder(char *current_folder, char *folder) {
@@ -153,7 +153,7 @@ char *get_new_folder(char *current_folder, char *folder) {
 
 char *go_back(char *current_folder) {
     char *new_folder = "";
-    int i, length = strlen(current_folder);
+    int i, length = (int) strlen(current_folder);
     for (i = length; i > 0; i--) {
         if (current_folder[i] == '\\') {
             new_folder = calloc(sizeof(char), (size_t) (i) + 1);
@@ -175,8 +175,8 @@ int is_csv_file(char *fileName) {
         return 0;
 }
 
-int is_at_documents(char *folder) {
-    int i, length = strlen(folder);
+int is_at_documents(const char *folder) {
+    int i, length = (int) strlen(folder);
     for (i = length; i > 0; i--) {
         if (folder[i] == '\\') {
             return strncmp(folder + (i + 1), "Documents", 9);
