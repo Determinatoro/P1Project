@@ -59,7 +59,10 @@ int get_directory_content(const char *dir_path, DIRENT **dirent_arr) {
 
         while ((dirent = readdir(dir)) != NULL) {
             if (dirent->d_name[0] != '.') {
-                (*dirent_arr)[number_of_dirents++] = *dirent;
+                if(((dirent->d_type == 0 || dirent->d_type == 8) && is_csv_file(dirent->d_name) == 0) ||
+                    (dirent->d_type != 0 && dirent->d_type != 8)){
+                    (*dirent_arr)[number_of_dirents++] = *dirent;
+                }
             }
         }
 
