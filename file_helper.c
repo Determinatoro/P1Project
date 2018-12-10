@@ -27,6 +27,7 @@ int get_number_of_lines_in_file(FILE *file) {
 
         rewind(file);
 
+
         return lines;
     }
 
