@@ -28,7 +28,7 @@ int main() {
     }*/
 
     /* Split the packets into tours */
-    split_gps_logger_packets_in_tours(gps_logger_packets, number_of_packets, &tour_data_arr, &tour_data_arr_size);
+    group_gps_logger_packets_in_tours(gps_logger_packets, number_of_packets, &tour_data_arr, &tour_data_arr_size);
 
     printf("\nAnalyze finished!\n");
 

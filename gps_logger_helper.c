@@ -20,6 +20,13 @@ int get_speed_type(double speed);
 
 double calculate_difference(TIME_DATA time_data1, TIME_DATA time_data2);
 
+int get_start_block_index(const BLOCK_DATA *block_data_arr, int block_index);
+
+int get_end_block_index(const BLOCK_DATA *block_data_arr, int block_data_arr_size, int block_index);
+
+void add_gps_packets_to_tour(const BLOCK_DATA *block_data_arr, int start_tour_block_index, int end_tour_block_index,
+                             int number_of_gps_packets, TOUR_DATA **tour_data_arr, int *tour_data_arr_size);
+
 /***********************/
 /* GPS LOGGER FILE FUNCTIONS */
 /***********************/
@@ -76,30 +83,34 @@ int parse_gps_logger_packet(char *line, const char splitter, GPS_LOGGER_PACKET *
     return 0;
 }
 
-/* Read GPS Logger file and get the packets */
-int read_gps_logger_csv_file(const char *file_name, int *number_of_packets, GPS_LOGGER_PACKET **gps_logger_packets) {
+/* Read GPS Logger file and parse the data lines into packets */
+int read_gps_logger_csv_file(const char *file_path,
+                             int *out_no_of_packets,
+                             GPS_LOGGER_PACKET **out_gps_logger_packets) {
     char **lines = NULL, *headers, splitter;
     int i, line_counter = 0;
 
     /* Set start value */
-    *number_of_packets = 0;
+    *out_no_of_packets = 0;
 
     /* Read file, get all the lines in the file back */
-    if (read_file(file_name, &line_counter, GPS_LOGGER_LINE_SIZE, &lines, "")) {
-        *gps_logger_packets = malloc(sizeof(GPS_LOGGER_PACKET) * line_counter);
+    if (read_file(file_path, &line_counter, GPS_LOGGER_LINE_SIZE, &lines, "")) {
+        *out_gps_logger_packets = malloc(sizeof(GPS_LOGGER_PACKET) * line_counter);
         /* Get headers */
         headers = lines[0];
         splitter = get_csv_file_splitter(headers);
         lines = &lines[1];
 
+        /* Parse every line into a GPS Logger packet */
         for (i = 0; i < line_counter - 1; i++) {
             GPS_LOGGER_PACKET gps_logger_packet;
             if (parse_gps_logger_packet(lines[i], splitter, &gps_logger_packet)) {
-                (*gps_logger_packets)[(*number_of_packets)++] = gps_logger_packet;
+                (*out_gps_logger_packets)[(*out_no_of_packets)++] = gps_logger_packet;
             }
         }
 
-        if (*number_of_packets == 0)
+        /* If there no valid data */
+        if (*out_no_of_packets == 0)
             return 0;
 
         free(lines);
@@ -148,6 +159,7 @@ int write_gps_logger_csv_file(const char *file_path, TOUR_DATA tour_data) {
 /* GPS LOGGER ANALYZE FUNCTIONS */
 /***********************/
 
+/* Get speed type from the given speed */
 int get_speed_type(double speed) {
     if (speed == 0) {
         return STOPPED;
@@ -162,6 +174,7 @@ int get_speed_type(double speed) {
     }
 }
 
+/* Get speed type as a string */
 char *get_speed_type_str(SPEED_TYPE speed_type) {
     switch (speed_type) {
         case STOPPED:
@@ -187,79 +200,126 @@ double calculate_difference(TIME_DATA time_data1, TIME_DATA time_data2) {
     return difftime(time1, time2);
 }
 
+/* Get start block index for the tour */
+int get_start_block_index(const BLOCK_DATA *block_data_arr, int block_index) {
+    int j, index = block_index;
+    /* Find out if there are any BIKE or CAR blocks before this one */
+    for (j = block_index - 1; j >= 0; j--) {
+        if ((block_data_arr[j].highest_speed_type == BICYCLE &&
+             block_data_arr[j].average_speed > WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
+            block_data_arr[j].highest_speed_type == CAR)
+            index = j;
+        else
+            break;
+    }
 
-/* Split the GPS logger packets in tours */
-void split_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packets,
+    return index;
+}
+
+/* Get end block index for the tour */
+int get_end_block_index(const BLOCK_DATA *block_data_arr, int block_data_arr_size, int block_index) {
+    int j, index = block_index;
+    /* Find out if there are any BIKE or CAR block after this one */
+    for (j = block_index + 1; j < block_data_arr_size; j++) {
+        if ((block_data_arr[j].highest_speed_type == BICYCLE &&
+             block_data_arr[j].average_speed > WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
+            block_data_arr[j].highest_speed_type == CAR)
+            index = j;
+        else
+            break;
+    }
+
+    return index;
+}
+
+/* Add GPS Logger packets to a tour */
+void add_gps_packets_to_tour(const BLOCK_DATA *block_data_arr, int start_tour_block_index, int end_tour_block_index,
+                             int number_of_gps_packets, TOUR_DATA **tour_data_arr, int *tour_data_arr_size) {
+    int i, j;
+    (*tour_data_arr)[*tour_data_arr_size].gps_logger_packets_size = 0;
+    (*tour_data_arr)[*tour_data_arr_size].gps_logger_packets = malloc(
+            sizeof(GPS_LOGGER_PACKET) * number_of_gps_packets);
+    for (i = start_tour_block_index; i <= end_tour_block_index; i++) {
+        for (j = 0; j < block_data_arr[i].gps_logger_packets_size; j++) {
+            GPS_LOGGER_PACKET gps_logger_packet = block_data_arr[i].gps_logger_packets[j];
+            (*tour_data_arr)[*tour_data_arr_size].gps_logger_packets[(*tour_data_arr)[*tour_data_arr_size].gps_logger_packets_size++] = gps_logger_packet;
+        }
+    }
+    (*tour_data_arr_size)++;
+}
+
+/* Group the GPS logger packets in tours */
+void group_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packets,
                                        int number_of_gps_logger_packets,
                                        TOUR_DATA **out_tour_data_arr,
                                        int *out_tour_data_arr_size) {
-    int i, j, k,
+    int i,
             block_data_arr_size = 0,
-            block_data_started = 0,
+            block_grouping_started = 0,
             filtered_gps_logger_packets_size = 0,
-            start_tour_block_index = 0,
-            end_tour_block_index = 0,
+            start_tour_block_index = -1,
+            end_tour_block_index = -1,
             found_start_of_tour = 0;
     GPS_LOGGER_PACKET *filtered_gps_logger_packets;
     SPEED_TYPE speed_type;
 
     filtered_gps_logger_packets = malloc(sizeof(GPS_LOGGER_PACKET) * number_of_gps_logger_packets);
 
-    /* Filter the GPS data by looking at the accuracy */
+    /* Filter the GPS packets by looking at the accuracy */
     for (i = 0; i < number_of_gps_logger_packets; i++) {
         if (gps_logger_packets[i].accuracy < HIGHEST_ACCURACY) {
             filtered_gps_logger_packets[filtered_gps_logger_packets_size] = gps_logger_packets[i];
             filtered_gps_logger_packets[filtered_gps_logger_packets_size++].speed_type = get_speed_type(
-                    gps_logger_packets[i].speed);;
+                    gps_logger_packets[i].speed);
         }
     }
 
     /* Allocate space for the block data */
     BLOCK_DATA *block_data_arr = malloc(sizeof(BLOCK_DATA) * filtered_gps_logger_packets_size);
 
-    /* Create blocks of data */
+    /* Group GPS Logger packets in blocks */
     for (i = 0; i < filtered_gps_logger_packets_size; i++) {
         speed_type = filtered_gps_logger_packets[i].speed_type;
         /* Start of new block */
-        if (speed_type != STOPPED && !block_data_started) {
+        if (speed_type != STOPPED && !block_grouping_started) {
             /* Set flag */
-            block_data_started = 1;
-            /* Create new block data */
+            block_grouping_started = 1;
+
             BLOCK_DATA block_data;
-            /* Set total speed */
+            /* Set speed */
             block_data.total_speed = filtered_gps_logger_packets[i].speed;
-            /* Set average speed */
             block_data.average_speed = block_data.total_speed;
-            /* Allocate space for the GPS LOGGER packets */
+
             block_data.gps_logger_packets = malloc(sizeof(GPS_LOGGER_PACKET) * filtered_gps_logger_packets_size);
-            /* Set size of array to 0 */
             block_data.gps_logger_packets_size = 0;
-            /* Add GPS LOGGER packet to the array */
             block_data.gps_logger_packets[block_data.gps_logger_packets_size++] = filtered_gps_logger_packets[i];
-            /* Set highest speed type */
+
+            /* Set the blocks speed type */
             block_data.highest_speed_type = filtered_gps_logger_packets[i].speed_type;
-            /* Add block data to the array */
+
             block_data_arr[block_data_arr_size++] = block_data;
         } /* Skip packets where the speed type is stopped */
         else if (speed_type == STOPPED) {
-            block_data_started = 0;
+            block_grouping_started = 0;
         } /* If there has been added an block to the array */
         else if (block_data_arr_size > 0) {
-            /* Add to the total speed */
+            /* Add packet speed to the total speed */
             block_data_arr[block_data_arr_size - 1].total_speed += filtered_gps_logger_packets[i].speed;
-            /* Add GPS LOGGER packet to the block */
-            block_data_arr[block_data_arr_size - 1].gps_logger_packets[block_data_arr[block_data_arr_size -
-                                                                                      1].gps_logger_packets_size++] = filtered_gps_logger_packets[i];
+            /* Add GPS Logger packet to the block */
+            block_data_arr[block_data_arr_size - 1].
+                    gps_logger_packets[block_data_arr[block_data_arr_size - 1].gps_logger_packets_size++] =
+                    filtered_gps_logger_packets[i];
             /* Calculate average speed */
             block_data_arr[block_data_arr_size - 1].average_speed =
                     block_data_arr[block_data_arr_size - 1].total_speed /
                     block_data_arr[block_data_arr_size - 1].gps_logger_packets_size;
-            /* Set highest speed type for the block */
-            if (filtered_gps_logger_packets[i].speed_type > block_data_arr[block_data_arr_size - 1].highest_speed_type)
-                block_data_arr[block_data_arr_size - 1].highest_speed_type = filtered_gps_logger_packets[i].speed_type;
+            /* Set speed type for the block */
+            if (filtered_gps_logger_packets[i].speed_type >
+                block_data_arr[block_data_arr_size - 1].highest_speed_type)
+                block_data_arr[block_data_arr_size - 1].highest_speed_type =
+                        filtered_gps_logger_packets[i].speed_type;
         }
     }
-
 
 #ifdef DEBUG
     /* Write out the block data */
@@ -280,43 +340,27 @@ void split_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
     }
 #endif
 
-
     /* Allocate space for the tour data */
     *out_tour_data_arr = malloc(sizeof(TOUR_DATA) * block_data_arr_size);
     /* Set size of array to 0 */
     *out_tour_data_arr_size = 0;
 
+    /* Group blocks in tours */
     for (i = 0; i < block_data_arr_size; i++) {
-        /* If the blocks highest speed type is CAR and the average speed is higher than the minimum car speed */
+        /* If the blocks highest speed type is CAR and the average
+         * speed is higher than the minimum car speed
+         */
         if (block_data_arr[i].highest_speed_type == CAR &&
             block_data_arr[i].average_speed >= BIKE_SPEED_MAX_CAR_SPEED_MIN) {
             /* If there has already been found a block */
-            if (found_start_of_tour) {
-                /* Set temp indexes */
-                int start_block_index = i;
-                int end_block_index = i;
-                /* Find out if there are any BIKE or CAR blocks before this one */
-                for (j = i - 1; j >= 0; j--) {
-                    if ((block_data_arr[j].highest_speed_type == BICYCLE &&
-                         block_data_arr[j].average_speed > WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
-                            block_data_arr[j].highest_speed_type == CAR)
-                        start_block_index = j;
-                    else
-                        break;
-                }
-
-                /* Find out if there are any BIKE or CAR block after this one */
-                for (j = i + 1; j < block_data_arr_size; j++) {
-                    if ((block_data_arr[j].highest_speed_type == BICYCLE &&
-                         block_data_arr[j].average_speed > WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
-                            block_data_arr[j].highest_speed_type == CAR)
-                        end_block_index = j;
-                    else
-                        break;
-                }
+            if (start_tour_block_index != -1 && end_tour_block_index != -1) {
+                /* Find BIKE and CAR block located before or after the current block */
+                int start_block_index = get_start_block_index(block_data_arr, i);
+                int end_block_index = get_end_block_index(block_data_arr, block_data_arr_size, i);
 
                 /*
-                 * Find the difference in time between the last GPS LOGGER packet in the last block and the first GPS
+                 * Find the difference in time between the last
+                 * GPS LOGGER packet in the last block and the first GPS
                  * LOGGER packet in this block
                  */
                 double diff = abs(
@@ -331,19 +375,13 @@ void split_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
                     end_tour_block_index = end_block_index;
                     i = end_tour_block_index;
                 } else {
-                    /* Reset flag */
-                    found_start_of_tour = 0;
                     /* Add GPS LOGGER packets to tour data */
-                    (*out_tour_data_arr)[*out_tour_data_arr_size].gps_logger_packets_size = 0;
-                    (*out_tour_data_arr)[*out_tour_data_arr_size].gps_logger_packets = malloc(
-                            sizeof(GPS_LOGGER_PACKET) * filtered_gps_logger_packets_size);
-                    for (j = start_tour_block_index; j <= end_tour_block_index; j++) {
-                        for (k = 0; k < block_data_arr[j].gps_logger_packets_size; k++) {
-                            (*out_tour_data_arr)[*out_tour_data_arr_size].gps_logger_packets[(*out_tour_data_arr)[*out_tour_data_arr_size].gps_logger_packets_size++] =
-                                    block_data_arr[j].gps_logger_packets[k];
-                        }
-                    }
-                    (*out_tour_data_arr_size)++;
+                    add_gps_packets_to_tour(block_data_arr,
+                                            start_tour_block_index,
+                                            end_tour_block_index,
+                                            filtered_gps_logger_packets_size,
+                                            out_tour_data_arr,
+                                            out_tour_data_arr_size);
 
                     /* Set indedes for new tour */
                     start_tour_block_index = start_block_index;
@@ -351,32 +389,9 @@ void split_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
                     i = end_tour_block_index;
                 }
             } else {
-                /* Set temp indexes */
-                start_tour_block_index = i;
-                end_tour_block_index = i;
-
-                /* Find out if there are any BIKE or CAR blocks before this one */
-                for (j = i - 1; j >= 0; j--) {
-                    if ((block_data_arr[j].highest_speed_type == BICYCLE &&
-                         block_data_arr[j].average_speed > WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
-                            block_data_arr[j].highest_speed_type == CAR)
-                        start_tour_block_index = j;
-                    else
-                        break;
-                }
-
-                /* Find out if there are any BIKE or CAR block after this one */
-                for (j = i + 1; j < block_data_arr_size; j++) {
-                    if ((block_data_arr[j].highest_speed_type == BICYCLE &&
-                         block_data_arr[j].average_speed > WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
-                            block_data_arr[j].highest_speed_type == CAR)
-                        end_tour_block_index = j;
-                    else
-                        break;
-                }
-
-                /* Set flag */
-                found_start_of_tour = 1;
+                /* Find BIKE and CAR block located before or after the current block */
+                start_tour_block_index = get_start_block_index(block_data_arr, i);
+                end_tour_block_index = get_end_block_index(block_data_arr, block_data_arr_size, i);
 
                 /* Set i to the end so the blocks are not gone through twice */
                 i = end_tour_block_index;
@@ -385,16 +400,13 @@ void split_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
     }
 
     /* Add GPS LOGGER packets to tour data */
-    (*out_tour_data_arr)[*out_tour_data_arr_size].gps_logger_packets_size = 0;
-    (*out_tour_data_arr)[*out_tour_data_arr_size].gps_logger_packets = malloc(
-            sizeof(GPS_LOGGER_PACKET) * filtered_gps_logger_packets_size);
-    for (i = start_tour_block_index; i <= end_tour_block_index; i++) {
-        for (j = 0; j < block_data_arr[i].gps_logger_packets_size; j++) {
-            GPS_LOGGER_PACKET gps_logger_packet = block_data_arr[i].gps_logger_packets[j];
-            (*out_tour_data_arr)[*out_tour_data_arr_size].gps_logger_packets[(*out_tour_data_arr)[*out_tour_data_arr_size].gps_logger_packets_size++] = gps_logger_packet;
-        }
-    }
-    (*out_tour_data_arr_size)++;
+    add_gps_packets_to_tour(block_data_arr,
+                            start_tour_block_index,
+                            end_tour_block_index,
+                            filtered_gps_logger_packets_size,
+                            out_tour_data_arr,
+                            out_tour_data_arr_size);
+
 
     free(filtered_gps_logger_packets);
     free(block_data_arr);
