@@ -63,7 +63,7 @@ int get_directory_content(const char *dir_path, DIRENT **dirent_arr) {
             /* Filter hidden files and folders away */
             if (dirent->d_name[0] != '.') {
                 /* Only show CSV files and folders */
-                if(((dirent->d_type == 0 || dirent->d_type == 8) && is_csv_file(dirent->d_name) == 0) ||
+                if(((dirent->d_type == 0 || dirent->d_type == 8) && is_csv_file(dirent->d_name)) ||
                     (dirent->d_type != 0 && dirent->d_type != 8)){
                     (*dirent_arr)[number_of_dirents++] = *dirent;
                 }
@@ -103,7 +103,7 @@ char *start_user_dialog(char **folder) {
             if(res == 1){
                 if (choice > 0 && (choice - 2) < number_of_dirents) {
                     if (choice == 1) {
-                        if (is_at_documents(current_folder) != 0) {
+                        if (!is_at_documents(current_folder)) {
                             current_folder = go_back(current_folder);
                             open_new_folder(&dirent_arr, &number_of_dirents, current_folder);
                         } else
@@ -112,7 +112,7 @@ char *start_user_dialog(char **folder) {
                         current_folder = get_new_folder(current_folder, dirent_arr[choice - 2].d_name);
                         open_new_folder(&dirent_arr, &number_of_dirents, current_folder);
                     } else {
-                        if (is_csv_file(dirent_arr[choice - 2].d_name) == 0) {
+                        if (is_csv_file(dirent_arr[choice - 2].d_name)) {
                             /* Select file */
                             file_selected = calloc(sizeof(char),
                                                    (strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 2));
@@ -170,7 +170,7 @@ int is_csv_file(char *fileName) {
     /* Find the last '.' char in the filename to get the file extension */
     char *s = strrchr(fileName, '.');
     if (s != NULL)
-        return strcmp(s, ".csv");
+        return strcmp(s, ".csv") == 0;
     else
         return 0;
 }
@@ -179,10 +179,10 @@ int is_at_documents(const char *folder) {
     int i, length = (int) strlen(folder);
     for (i = length; i > 0; i--) {
         if (folder[i] == '\\') {
-            return strncmp(folder + (i + 1), "Documents", 9);
+            return strncmp(folder + (i + 1), "Documents", 9) == 0;
         }
     }
-    return -1;
+    return 0;
 }
 
 int is_exit_cmd(char *str){
