@@ -99,21 +99,21 @@ int read_gps_logger_csv_file(const char *file_path,
         /* Get headers */
         headers = lines[0];
         splitter = get_csv_file_splitter(headers);
-        lines = &lines[1];
 
         /* Parse every line into a GPS Logger packet */
-        for (i = 0; i < line_counter - 1; i++) {
+        for (i = 1; i < line_counter - 1; i++) {
             GPS_LOGGER_PACKET gps_logger_packet;
             if (parse_gps_logger_packet(lines[i], splitter, &gps_logger_packet)) {
                 (*out_gps_logger_packets)[(*out_no_of_packets)++] = gps_logger_packet;
             }
         }
 
+        free(lines);
+
         /* If there no valid data */
         if (*out_no_of_packets == 0)
             return 0;
 
-        free(lines);
         return 1;
     }
 
@@ -258,8 +258,7 @@ void group_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
             block_grouping_started = 0,
             filtered_gps_logger_packets_size = 0,
             start_tour_block_index = -1,
-            end_tour_block_index = -1,
-            found_start_of_tour = 0;
+            end_tour_block_index = -1;
     GPS_LOGGER_PACKET *filtered_gps_logger_packets;
     SPEED_TYPE speed_type;
 
@@ -267,7 +266,7 @@ void group_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
 
     /* Filter the GPS packets by looking at the accuracy */
     for (i = 0; i < number_of_gps_logger_packets; i++) {
-        if (gps_logger_packets[i].accuracy < HIGHEST_ACCURACY) {
+        if (gps_logger_packets[i].accuracy <= HIGHEST_ACCURACY) {
             filtered_gps_logger_packets[filtered_gps_logger_packets_size] = gps_logger_packets[i];
             filtered_gps_logger_packets[filtered_gps_logger_packets_size++].speed_type = get_speed_type(
                     gps_logger_packets[i].speed);

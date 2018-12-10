@@ -8,10 +8,10 @@
 /* DEFINES */
 /******************************/
 
-#define HIGHEST_ACCURACY    25
-#define HIGHEST_DIFF_SEC    180
-#define GPS_LOGGER_LINE_SIZE    150
-#define GPS_LOGGER_NUM_OF_COL   13
+#define HIGHEST_ACCURACY                    250
+#define HIGHEST_DIFF_SEC                    240
+#define GPS_LOGGER_LINE_SIZE                150
+#define GPS_LOGGER_NUM_OF_COL               13
 
 #define WALK_SPEED_MIN                      0
 #define WALK_SPEED_MAX_BIKE_SPEED_MIN       6.0f
