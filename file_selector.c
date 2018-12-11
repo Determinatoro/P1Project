@@ -47,34 +47,33 @@ int get_directory_content(const char *dir_path, DIRENT **dirent_arr) {
     DIRENT *dirent;
 
     dir = opendir(dir_path);
-    if (dir != NULL) {
-        /* Get number of files and folders in the directory */
-        while (readdir(dir) != NULL)
-            number_of_dirents++;
+    if (dir == NULL)
+        return 0;
 
-        /* Reset pointer */
-        rewinddir(dir);
+    /* Get number of files and folders in the directory */
+    while (readdir(dir) != NULL)
+        number_of_dirents++;
 
-        *dirent_arr = malloc(sizeof(DIRENT) * number_of_dirents);
+    /* Reset pointer */
+    rewinddir(dir);
 
-        number_of_dirents = 0;
+    *dirent_arr = malloc(sizeof(DIRENT) * number_of_dirents);
 
-        while ((dirent = readdir(dir)) != NULL) {
-            /* Filter hidden files and folders away */
-            if (dirent->d_name[0] != '.') {
-                /* Only show CSV files and folders */
-                if(((dirent->d_type == 0 || dirent->d_type == 8) && is_csv_file(dirent->d_name)) ||
-                    (dirent->d_type != 0 && dirent->d_type != 8)){
-                    (*dirent_arr)[number_of_dirents++] = *dirent;
-                }
+    number_of_dirents = 0;
+
+    while ((dirent = readdir(dir)) != NULL) {
+        /* Filter hidden files and folders away */
+        if (dirent->d_name[0] != '.') {
+            /* Only show CSV files and folders */
+            if (((dirent->d_type == 0 || dirent->d_type == 8) && is_csv_file(dirent->d_name)) ||
+                (dirent->d_type != 0 && dirent->d_type != 8)) {
+                (*dirent_arr)[number_of_dirents++] = *dirent;
             }
         }
-
-        closedir(dir);
-        return number_of_dirents;
     }
 
-    return 0;
+    closedir(dir);
+    return number_of_dirents;
 }
 
 char *start_user_dialog(char **folder) {
@@ -94,13 +93,13 @@ char *start_user_dialog(char **folder) {
         res = scanf(" %4s", choiceStr);
 
         if (res == 1) {
-            if(is_exit_cmd(choiceStr)){
+            if (is_exit_cmd(choiceStr)) {
                 printf("Terminating program!");
                 return "";
             }
 
             res = sscanf(choiceStr, "%d", &choice);
-            if(res == 1){
+            if (res == 1) {
                 if (choice > 0 && (choice - 2) < number_of_dirents) {
                     if (choice == 1) {
                         if (!is_at_documents(current_folder)) {
@@ -115,7 +114,8 @@ char *start_user_dialog(char **folder) {
                         if (is_csv_file(dirent_arr[choice - 2].d_name)) {
                             /* Select file */
                             file_selected = calloc(sizeof(char),
-                                                   (strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 2));
+                                                   (strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) +
+                                                    2));
                             strcpy(file_selected, current_folder);
                             strcpy(file_selected + strlen(current_folder), "\\");
                             strcpy(file_selected + strlen(current_folder) + 1, dirent_arr[choice - 2].d_name);
@@ -185,10 +185,10 @@ int is_at_documents(const char *folder) {
     return 0;
 }
 
-int is_exit_cmd(char *str){
+int is_exit_cmd(char *str) {
     int i = 0;
-    for(i = 0; i < strlen(str); i++){
-        str[i] = (char)tolower(str[i]);
+    for (i = 0; i < strlen(str); i++) {
+        str[i] = (char) tolower(str[i]);
     }
 
     return strcmp(str, "exit") == 0;

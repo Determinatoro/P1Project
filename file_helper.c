@@ -73,15 +73,15 @@ int read_file(const char *file_name, int *number_of_lines, const int line_size, 
     /* Read each line */
     while (fgets(str, line_size, fp) != NULL) {
         /* Copy the line content */
-        line = malloc(strlen(str));
+        line = malloc(strlen(str) + 1);
         strcpy(line, str);
         /* Remove CR and LF from the line */
         remove_cr_lf(line);
 
         /* If the line is empty skip it */
-        if (strcmp(line, "") == 0)
+        if (strcmp(line, "") == 0) {
             continue;
-            /* If the filter is set to nothing */
+        } /* If the filter is set to nothing */
         else if (strcmp(filter, "") == 0) {
             (*lines)[(*number_of_lines)++] = line;
         } /* If the line starts with the filter */
@@ -91,6 +91,7 @@ int read_file(const char *file_name, int *number_of_lines, const int line_size, 
             }
         }
     }
+
     /* Close file */
     fclose(fp);
 

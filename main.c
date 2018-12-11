@@ -4,6 +4,7 @@
 #include <math.h>
 #include <unistd.h>
 #include <windows.h>
+#include <conio.h>
 
 #include "gps_logger_helper.h"
 #include "file_helper.h"
@@ -45,6 +46,9 @@ int main() {
     /* Free the memory */
     free(tour_data_arr);
     free(gps_logger_packets);
+
+    printf("\nPress Any Key to Continue...");
+    _getch();
 
     return 0;
 }

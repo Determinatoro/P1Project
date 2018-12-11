@@ -36,7 +36,7 @@ void add_gps_packets_to_tour(const BLOCK_DATA *block_data_arr, int start_tour_bl
  * Format example: 2018-11-16 17:00:00
  * */
 void split_gps_logger_date_time(const char *date_time_str, TIME_DATA *time_data) {
-    time_data->tm_year = string_to_int_l(&date_time_str[0], 4);
+    time_data->tm_year = string_to_int_l(&date_time_str[0], 4) - 1900;
     time_data->tm_mon = string_to_int_l(&date_time_str[5], 2);
     time_data->tm_mday = string_to_int_l(&date_time_str[8], 2);
 
@@ -94,30 +94,29 @@ int read_gps_logger_csv_file(const char *file_path,
     *out_no_of_packets = 0;
 
     /* Read file, get all the lines in the file back */
-    if (read_file(file_path, &line_counter, GPS_LOGGER_LINE_SIZE, &lines, "")) {
-        *out_gps_logger_packets = malloc(sizeof(GPS_LOGGER_PACKET) * line_counter);
-        /* Get headers */
-        headers = lines[0];
-        splitter = get_csv_file_splitter(headers);
+    if (!read_file(file_path, &line_counter, GPS_LOGGER_LINE_SIZE, &lines, ""))
+        return 0;
 
-        /* Parse every line into a GPS Logger packet */
-        for (i = 1; i < line_counter - 1; i++) {
-            GPS_LOGGER_PACKET gps_logger_packet;
-            if (parse_gps_logger_packet(lines[i], splitter, &gps_logger_packet)) {
-                (*out_gps_logger_packets)[(*out_no_of_packets)++] = gps_logger_packet;
-            }
+    *out_gps_logger_packets = malloc(sizeof(GPS_LOGGER_PACKET) * line_counter);
+    /* Get headers */
+    headers = lines[0];
+    splitter = get_csv_file_splitter(headers);
+
+    /* Parse every line into a GPS Logger packet */
+    for (i = 1; i < line_counter - 1; i++) {
+        GPS_LOGGER_PACKET gps_logger_packet;
+        if (parse_gps_logger_packet(lines[i], splitter, &gps_logger_packet)) {
+            (*out_gps_logger_packets)[(*out_no_of_packets)++] = gps_logger_packet;
         }
-
-        free(lines);
-
-        /* If there no valid data */
-        if (*out_no_of_packets == 0)
-            return 0;
-
-        return 1;
     }
 
-    return 0;
+    free(lines);
+
+    /* If there no valid data */
+    if (*out_no_of_packets == 0)
+        return 0;
+
+    return 1;
 }
 
 /* Write data to CSV file */
@@ -197,7 +196,7 @@ double calculate_difference(TIME_DATA time_data1, TIME_DATA time_data2) {
     time1 = mktime(&time_data1);
     time2 = mktime(&time_data2);
 
-    return difftime(time1, time2);
+    return difftime(time2, time1);
 }
 
 /* Get start block index for the tour */
@@ -253,7 +252,7 @@ void group_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
                                        int number_of_gps_logger_packets,
                                        TOUR_DATA **out_tour_data_arr,
                                        int *out_tour_data_arr_size) {
-    int i,
+    int i, j,
             block_data_arr_size = 0,
             block_grouping_started = 0,
             filtered_gps_logger_packets_size = 0,
