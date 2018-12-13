@@ -31,7 +31,9 @@ int is_at_documents(const char *folder);
 
 void print_directory_content(const char *current_folder, const DIRENT *dirent_arr, int number_of_dirents) {
     int i, start_index = 1;
-    printf("%2d | %s\n", start_index++, "Go back");
+
+    if(!is_at_documents(current_folder))
+        printf("%2d | %s\n", start_index++, "Go back");
     if (number_of_dirents > 0) {
         for (i = 0; i < number_of_dirents; i++) {
             printf("%2d | %s\n", i + start_index, dirent_arr[i].d_name);
@@ -78,7 +80,7 @@ int get_directory_content(const char *dir_path, DIRENT **dirent_arr) {
 
 char *start_user_dialog(char **folder) {
     DIRENT *dirent_arr;
-    int choice = 1, res = 0, number_of_dirents = 0;
+    int choice = 1, res = 0, number_of_dirents = 0, index = 0;
     char *file_selected, *current_folder;
     char *p = getenv("USERNAME");
     char choiceStr[5];
@@ -100,26 +102,27 @@ char *start_user_dialog(char **folder) {
 
             res = sscanf(choiceStr, "%d", &choice);
             if (res == 1) {
-                if (choice > 0 && (choice - 2) < number_of_dirents) {
-                    if (choice == 1) {
+                index = is_at_documents(current_folder) ? 1 : 2;
+                if (choice > 0 && (choice - index) < number_of_dirents) {
+                    if (choice == 1 && !is_at_documents(current_folder)) {
                         if (!is_at_documents(current_folder)) {
                             current_folder = go_back(current_folder);
                             open_new_folder(&dirent_arr, &number_of_dirents, current_folder);
                         } else
                             printf("You can't go further back!\n");
-                    } else if (dirent_arr[choice - 2].d_type != 0 && dirent_arr[choice - 2].d_type != 8) {
-                        current_folder = get_new_folder(current_folder, dirent_arr[choice - 2].d_name);
+                    } else if (dirent_arr[choice - index].d_type != 0 && dirent_arr[choice - index].d_type != 8) {
+                        current_folder = get_new_folder(current_folder, dirent_arr[choice - index].d_name);
                         open_new_folder(&dirent_arr, &number_of_dirents, current_folder);
                     } else {
-                        if (is_csv_file(dirent_arr[choice - 2].d_name)) {
+                        if (is_csv_file(dirent_arr[choice - index].d_name)) {
                             /* Select file */
                             file_selected = calloc(sizeof(char),
-                                                   (strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) +
+                                                   (strlen(current_folder) + strlen(dirent_arr[choice - index].d_name) +
                                                     2));
                             strcpy(file_selected, current_folder);
                             strcpy(file_selected + strlen(current_folder), "\\");
-                            strcpy(file_selected + strlen(current_folder) + 1, dirent_arr[choice - 2].d_name);
-                            file_selected[(strlen(current_folder) + strlen(dirent_arr[choice - 2].d_name) + 1)] = '\0';
+                            strcpy(file_selected + strlen(current_folder) + 1, dirent_arr[choice - index].d_name);
+                            file_selected[(strlen(current_folder) + strlen(dirent_arr[choice - index].d_name) + 1)] = '\0';
                             *folder = malloc(sizeof(char) * strlen(current_folder));
                             *folder = current_folder;
                             clear_screen();
