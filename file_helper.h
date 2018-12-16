@@ -1,7 +1,7 @@
-#include <stdio.h>
-
 #ifndef P1PROJECT_FILE_HELPER_H
 #define P1PROJECT_FILE_HELPER_H
+
+#include <stdio.h>
 
 /******************************/
 /* PROTOTYPES */

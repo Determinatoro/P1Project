@@ -3,12 +3,15 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-
-/*#define DEBUG 1*/
-
 #include "gps_logger_helper.h"
 #include "file_helper.h"
 #include "csv_helper.h"
+
+/******************************/
+/* DEFINES */
+/******************************/
+
+/*#define DEBUG 1*/
 
 /******************************/
 /* PROTOTYPES */
@@ -160,7 +163,7 @@ int write_gps_logger_csv_file(const char *file_path, TOUR_DATA tour_data) {
 
 /* Get speed type from the given speed */
 int get_speed_type(double speed) {
-    if (speed == 0) {
+    if (speed < 0.1) {
         return STOPPED;
     } else if (speed > WALK_SPEED_MIN && speed < WALK_SPEED_MAX_BIKE_SPEED_MIN) {
         return WALK;
@@ -397,13 +400,15 @@ void group_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
         }
     }
 
-    /* Add GPS LOGGER packets to tour data */
-    add_gps_packets_to_tour(block_data_arr,
-                            start_tour_block_index,
-                            end_tour_block_index,
-                            filtered_gps_logger_packets_size,
-                            out_tour_data_arr,
-                            out_tour_data_arr_size);
+    if (start_tour_block_index != -1 && end_tour_block_index != -1) {
+        /* Add GPS LOGGER packets to tour data */
+        add_gps_packets_to_tour(block_data_arr,
+                                start_tour_block_index,
+                                end_tour_block_index,
+                                filtered_gps_logger_packets_size,
+                                out_tour_data_arr,
+                                out_tour_data_arr_size);
+    }
 
 
     free(filtered_gps_logger_packets);
