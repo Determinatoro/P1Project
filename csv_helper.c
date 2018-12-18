@@ -3,6 +3,7 @@
 #include <string.h>
 #include "csv_helper.h"
 #include "file_helper.h"
+#include "helper.h"
 
 /******************************/
 /* FUNCTIONS */

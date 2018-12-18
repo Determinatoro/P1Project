@@ -10,6 +10,9 @@
 #include "file_helper.h"
 #include "file_selector.h"
 
+/***********************/
+/* MAIN */
+/***********************/
 int main() {
     int i, number_of_packets, tour_data_arr_size;
     GPS_LOGGER_PACKET *gps_logger_packets;

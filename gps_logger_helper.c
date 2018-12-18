@@ -6,6 +6,7 @@
 #include "gps_logger_helper.h"
 #include "file_helper.h"
 #include "csv_helper.h"
+#include "helper.h"
 
 /******************************/
 /* DEFINES */
@@ -22,6 +23,8 @@ void split_gps_logger_date_time(const char *date_time_str, TIME_DATA *time_data)
 int get_speed_type(double speed);
 
 double calculate_difference(TIME_DATA time_data1, TIME_DATA time_data2);
+
+int check_block(const BLOCK_DATA *block_data_arr, int *index, int block_index);
 
 int get_start_block_index(const BLOCK_DATA *block_data_arr, int block_index);
 
@@ -189,6 +192,8 @@ char *get_speed_type_str(SPEED_TYPE speed_type) {
             return "CAR";
         case PLANE:
             return "PLANE";
+        default:
+            return "";
     }
 }
 
@@ -202,16 +207,24 @@ double calculate_difference(TIME_DATA time_data1, TIME_DATA time_data2) {
     return difftime(time2, time1);
 }
 
+/* Find out if the blocks speed type is BIKE or CAR */
+int check_block(const BLOCK_DATA *block_data_arr, int *index, int block_index) {
+    if ((block_data_arr[block_index].highest_speed_type == BICYCLE &&
+         block_data_arr[block_index].average_speed >= WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
+        block_data_arr[block_index].highest_speed_type == CAR) {
+        *index = block_index;
+        return 1;
+    }
+
+    return 0;
+}
+
 /* Get start block index for the tour */
 int get_start_block_index(const BLOCK_DATA *block_data_arr, int block_index) {
     int j, index = block_index;
     /* Find out if there are any BIKE or CAR blocks before this one */
     for (j = block_index - 1; j >= 0; j--) {
-        if ((block_data_arr[j].highest_speed_type == BICYCLE &&
-             block_data_arr[j].average_speed > WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
-            block_data_arr[j].highest_speed_type == CAR)
-            index = j;
-        else
+        if (!check_block(block_data_arr, &index, j))
             break;
     }
 
@@ -223,11 +236,7 @@ int get_end_block_index(const BLOCK_DATA *block_data_arr, int block_data_arr_siz
     int j, index = block_index;
     /* Find out if there are any BIKE or CAR block after this one */
     for (j = block_index + 1; j < block_data_arr_size; j++) {
-        if ((block_data_arr[j].highest_speed_type == BICYCLE &&
-             block_data_arr[j].average_speed > WALK_SPEED_MAX_BIKE_SPEED_MIN) ||
-            block_data_arr[j].highest_speed_type == CAR)
-            index = j;
-        else
+        if (!check_block(block_data_arr, &index, j))
             break;
     }
 
@@ -263,6 +272,7 @@ void group_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
             end_tour_block_index = -1;
     GPS_LOGGER_PACKET *filtered_gps_logger_packets;
     SPEED_TYPE speed_type;
+    BLOCK_DATA *block_data_arr;
 
     filtered_gps_logger_packets = malloc(sizeof(GPS_LOGGER_PACKET) * number_of_gps_logger_packets);
 
@@ -276,7 +286,7 @@ void group_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
     }
 
     /* Allocate space for the block data */
-    BLOCK_DATA *block_data_arr = malloc(sizeof(BLOCK_DATA) * filtered_gps_logger_packets_size);
+    block_data_arr = malloc(sizeof(BLOCK_DATA) * filtered_gps_logger_packets_size);
 
     /* Group GPS Logger packets in blocks */
     for (i = 0; i < filtered_gps_logger_packets_size; i++) {
@@ -373,8 +383,7 @@ void group_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
 
                 /* If the difference is lower than the set value set new end index */
                 if (diff <= HIGHEST_DIFF_SEC) {
-                    end_tour_block_index = end_block_index;
-                    i = end_tour_block_index;
+                    i = end_tour_block_index = end_block_index;
                 } else {
                     /* Add GPS LOGGER packets to tour data */
                     add_gps_packets_to_tour(block_data_arr,
@@ -386,8 +395,7 @@ void group_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
 
                     /* Set indedes for new tour */
                     start_tour_block_index = start_block_index;
-                    end_tour_block_index = end_block_index;
-                    i = end_tour_block_index;
+                    i = end_tour_block_index = end_block_index;
                 }
             } else {
                 /* Find BIKE and CAR block located before or after the current block */
@@ -400,8 +408,9 @@ void group_gps_logger_packets_in_tours(const GPS_LOGGER_PACKET *gps_logger_packe
         }
     }
 
+    /* Were there found any tours */
     if (start_tour_block_index != -1 && end_tour_block_index != -1) {
-        /* Add GPS LOGGER packets to tour data */
+        /* Add last tour found to array */
         add_gps_packets_to_tour(block_data_arr,
                                 start_tour_block_index,
                                 end_tour_block_index,
